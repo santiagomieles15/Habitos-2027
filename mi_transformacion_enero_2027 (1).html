@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14251d">
+<title>Mi transformación · Enero 2027</title>
+<style>
+:root{color-scheme:light;--ink:#17251e;--muted:#66756c;--line:#e1e8e2;--green:#236b45;--pale:#edf5ef}
+*{box-sizing:border-box}body{margin:0;background:#f4f7f4;color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:680px;margin:auto;padding:20px 14px 44px}.hero{background:#14251d;color:white;padding:22px;border-radius:22px}
+h1{font-size:25px;margin:0 0 6px}.sub{color:#d0ddd4;font-size:14px}.date{margin-top:18px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}.stat{background:white;border:1px solid var(--line);border-radius:15px;padding:13px 9px;text-align:center}.stat b{display:block;font-size:22px}.stat span{font-size:11px;color:var(--muted)}
+.panel{background:white;border:1px solid var(--line);border-radius:18px;padding:16px;margin:13px 0}.bar{height:12px;background:#e8eee9;border-radius:20px;overflow:hidden;margin:10px 0}.fill{height:100%;width:0;background:#2c8554;transition:width .2s}
+h2{font-size:18px;margin:0 0 12px}.item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #edf1ed}.item:last-child{border:0}.item input{width:22px;height:22px;accent-color:var(--green);flex:none}.item label{flex:1}.item.done label{text-decoration:line-through;color:#7b8980}.tag{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:3px 7px}
+button{border:0;border-radius:12px;padding:12px 15px;font-weight:650;background:var(--green);color:white;font-size:14px}button.secondary{background:#eaf0eb;color:var(--ink)}.actions{display:flex;gap:8px;flex-wrap:wrap}
+small,.note{color:var(--muted);font-size:13px;line-height:1.45}.history{display:grid;gap:7px}.day{display:flex;justify-content:space-between;border-bottom:1px solid #edf1ed;padding:8px 0;font-size:14px}
+</style>
+</head>
+<body><main>
+<section class="hero">
+<h1>Mi transformación</h1><div class="sub">Disciplina · crecimiento · finanzas</div>
+<div class="date" id="today"></div><div class="sub">Del 5 de noviembre de 2026 al 31 de enero de 2027</div>
+</section>
+<section class="stats">
+<div class="stat"><b id="daily">0%</b><span>HOY</span></div>
+<div class="stat"><b id="average">0%</b><span>PROMEDIO acumulado</span></div>
+<div class="stat"><b id="days">0</b><span>DÍAS registrados</span></div>
+</section>
+<section class="panel">
+<h2>Progreso de hoy</h2><div class="bar"><div class="fill" id="fill"></div></div>
+<div class="note" id="message">Cada hábito cumplido suma al porcentaje de hoy.</div>
+</section>
+<section class="panel">
+<h2>Mis 18 hábitos</h2><div id="list"></div>
+<div class="actions" style="margin-top:14px"><button class="secondary" id="clear">Desmarcar el día</button><button id="save">Guardar día</button></div>
+<p class="note">Tus marcas se guardan en este navegador en este dispositivo. Usa el mismo navegador y no borres sus datos.</p>
+</section>
+<section class="panel">
+<h2>Mi avance hasta el 31 de enero</h2>
+<div class="note">El promedio acumulado muestra qué porcentaje de tus 18 hábitos has cumplido, en promedio, en los días registrados. No es una promesa de hacerte 1% mejor automáticamente: refleja tus resultados reales.</div>
+<div id="history" class="history" style="margin-top:10px"></div>
+</section>
+<section class="panel">
+<h2>Respaldo de mis datos</h2><div class="actions"><button class="secondary" id="export">Exportar respaldo</button><button class="secondary" id="importBtn">Importar respaldo</button><input id="importFile" type="file" accept="application/json" hidden></div>
+<p class="note">Exporta un respaldo de vez en cuando para no perder tu historial si cambias de celular o navegador.</p>
+</section>
+</main>
+<script>
+const habits=[
+["Despertar – 8:00","="],["Lavarme la cara – 8:10","+"],["Hielo","+"],["Bloqueador solar","+"],["Desayunar","="],
+["Leer (mañana)","+"],["Estudiar","+"],["Ejercicio","+"],["Almorzar","="],["Celular – máximo 30 min","−"],
+["Inglés","+"],["Estudiar DA","+"],["Ejercicio","+"],["Cenar","="],["Bañarme","="],["Leer (noche)","+"],
+["Celular","−"],["Dormir","="]
+];
+const start="2026-11-05",end="2027-01-31";
+const key="miTransformacionNov2026";
+let data={};try{data=JSON.parse(localStorage.getItem(key)||"{}")}catch(e){data={}}
+const today=new Date();const iso=d=>{let x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)};
+const date=iso(today);const pretty=d=>new Date(d+"T12:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+document.getElementById("today").textContent=pretty(date);
+if(!data[date])data[date]=[];
+let selected=new Set(data[date]);
+const list=document.getElementById("list");
+habits.forEach((h,i)=>{let row=document.createElement("div");row.className="item"+(selected.has(i)?" done":"");let cb=document.createElement("input");cb.type="checkbox";cb.checked=selected.has(i);cb.id="h"+i;cb.addEventListener("change",()=>{cb.checked?selected.add(i):selected.delete(i);row.classList.toggle("done",cb.checked);render()});let label=document.createElement("label");label.htmlFor=cb.id;label.textContent=(i+1)+". "+h[0];let tag=document.createElement("span");tag.className="tag";tag.textContent=h[1];row.append(cb,label,tag);list.append(row)});
+function render(){let pct=Math.round(selected.size/habits.length*100);document.getElementById("daily").textContent=pct+"%";document.getElementById("fill").style.width=pct+"%";document.getElementById("message").textContent=selected.size+" de 18 hábitos cumplidos · "+(pct===100?"¡Completaste todos los hábitos de hoy!":"Cada casilla suma a tu progreso.");let keys=Object.keys(data).filter(k=>k>=start&&k<=end&&Array.isArray(data[k]));let total=keys.reduce((s,k)=>s+data[k].length/habits.length,0);document.getElementById("average").textContent=(keys.length?Math.round(total/keys.length*100):0)+"%";document.getElementById("days").textContent=keys.length;let hist=document.getElementById("history");hist.innerHTML="";keys.sort().reverse().slice(0,12).forEach(k=>{let d=document.createElement("div");d.className="day";let a=document.createElement("span");a.textContent=pretty(k);let b=document.createElement("b");b.textContent=Math.round(data[k].length/habits.length*100)+"%";d.append(a,b);hist.append(d)});if(!keys.length)hist.textContent="Aún no hay días guardados."}
+function persist(){data[date]=[...selected].sort((a,b)=>a-b);localStorage.setItem(key,JSON.stringify(data));render()}
+document.getElementById("save").onclick=persist;
+document.getElementById("clear").onclick=()=>{selected.clear();document.querySelectorAll("#list input").forEach(x=>{x.checked=false;x.parentElement.classList.remove("done")});persist()};
+document.getElementById("export").onclick=()=>{persist();let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-mi-transformacion.json";a.click();URL.revokeObjectURL(a.href)};
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange=async e=>{try{let obj=JSON.parse(await e.target.files[0].text());if(!obj||typeof obj!=="object")throw 0;data=obj;localStorage.setItem(key,JSON.stringify(data));selected=new Set(data[date]||[]);document.querySelectorAll("#list input").forEach((x,i)=>{x.checked=selected.has(i);x.parentElement.classList.toggle("done",x.checked)});render();alert("Respaldo importado.")}catch(err){alert("No se pudo importar ese archivo.")}};
+render();
+</script></body></html>
